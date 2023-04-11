@@ -73,13 +73,7 @@ endif()
 
 if (ENABLE_FFMPEG_SDL2_RENDERER)
   # sdl2
-  include(FetchContent)
-  FetchContent_Declare(
-          sdl2
-          GIT_REPOSITORY git@github.com:libsdl-org/SDL.git
-          GIT_TAG release-2.26.5
-  )
-  FetchContent_MakeAvailable(sdl2)
+  find_package(SDL2 REQUIRED)
 
   # ffmpeg
   list(APPEND CMAKE_MODULE_PATH ../cmake)
@@ -87,8 +81,8 @@ if (ENABLE_FFMPEG_SDL2_RENDERER)
 
   list(APPEND RENDERER_FLAGS "HAS_FFMPEG_SDL2_RENDERER" )
   list(APPEND RENDERER_SOURCES video_renderer_ffmpeg_sdl2.cpp)
-  list(APPEND RENDERER_LINK_LIBS SDL2 ${FFMPEG_LIBRARIES})
-  list(APPEND RENDERER_INCLUDE_DIRS ${FFMPEG_INCLUDE_DIRS})
+  list(APPEND RENDERER_LINK_LIBS ${SDL2_LIBRARIES} ${FFMPEG_LIBRARIES})
+  list(APPEND RENDERER_INCLUDE_DIRS ${SDL2_INCLUDE_DIRS} ${FFMPEG_INCLUDE_DIRS})
 endif ()
 
 # Create the renderers library and link against everything
