@@ -41,6 +41,10 @@
 #include "renderers/video_renderer.h"
 #include "renderers/audio_renderer.h"
 
+#ifdef HAS_FFMPEG_SDL2_RENDERER
+#include "renderers/sdl_event.h"
+#endif
+
 #define VERSION "1.2"
 
 #define DEFAULT_NAME "RPiPlay"
@@ -87,6 +91,9 @@ static const video_renderer_list_entry_t video_renderers[] = {
 #endif
 #if defined(HAS_GSTREAMER_RENDERER)
     {"gstreamer", "GStreamer H.264 renderer", video_renderer_gstreamer_init},
+#endif
+#if defined(HAS_FFMPEG_SDL2_RENDERER)
+    {"ffmpeg", "ffmpeg+sdl2 H.264 renderer", video_renderer_ffmpeg_sdl2_init},
 #endif
 #if defined(HAS_DUMMY_RENDERER)
     {"dummy", "Dummy renderer; does not actually display video", video_renderer_dummy_init},
@@ -305,9 +312,24 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    running = true;
-    while (running) {
+    for(;;) {
+#ifdef HAS_FFMPEG_SDL2_RENDERER
+        SDL_Event event;
+        SDL_PollEvent(&event);
+        if (event.type == SDL_QUIT) {
+            break;
+        }
+        if (event.type == SDL_USER_FUNC) {
+            auto func =
+                reinterpret_cast<std::function<void()> *>(event.user.data1);
+            (*func)();
+            delete func;
+            continue;
+        }
+        usleep(1000 * 16);
+#else
         sleep(1);
+#endif
     }
 
     LOGI("Stopping...");
