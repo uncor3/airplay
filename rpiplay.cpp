@@ -40,6 +40,7 @@
 #include "lib/dnssd.h"
 #include "renderers/video_renderer.h"
 #include "renderers/audio_renderer.h"
+#include <functional>
 
 #ifdef HAS_FFMPEG_SDL2_RENDERER
 #include "renderers/sdl_event.h"

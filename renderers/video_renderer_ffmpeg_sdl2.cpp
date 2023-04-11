@@ -19,17 +19,21 @@
 
 #include "sdl_event.h"
 #include "video_renderer.h"
+
+#include <SDL.h>
+#include <cstdio>
+#include <cstdlib>
 #include <functional>
 
 extern "C" {
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <SDL.h>
 #include <libavcodec/avcodec.h>
-#include <libswscale/swscale.h>
+#include <libavutil/error.h>
 }
+
+char av_error[AV_ERROR_MAX_STRING_SIZE] = {0};
+#undef av_err2str
+#define av_err2str(errnum)                                                     \
+  av_make_error_string(av_error, AV_ERROR_MAX_STRING_SIZE, errnum)
 
 typedef struct video_renderer_dummy_s {
   video_renderer_t base;

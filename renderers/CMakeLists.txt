@@ -88,7 +88,7 @@ endif ()
 # Create the renderers library and link against everything
 add_library( renderers STATIC ${RENDERER_SOURCES})
 target_link_libraries ( renderers ${RENDERER_LINK_LIBS} )
-target_include_directories( renderers PRIVATE ${RENDERER_INCLUDE_DIRS} )
+target_include_directories( renderers PUBLIC ${RENDERER_INCLUDE_DIRS} )
 
 # Pass the final renderer flags up to the parent scope so it knows which renderers
 # will be available to use.
