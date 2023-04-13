@@ -316,7 +316,7 @@ int main(int argc, char *argv[]) {
     for(;;) {
 #ifdef HAS_FFMPEG_SDL2_RENDERER
         SDL_Event event;
-        SDL_PollEvent(&event);
+        SDL_WaitEvent(&event);
         if (event.type == SDL_QUIT) {
             break;
         }
@@ -327,7 +327,6 @@ int main(int argc, char *argv[]) {
             delete func;
             continue;
         }
-        usleep(1000 * 16);
 #else
         sleep(1);
 #endif

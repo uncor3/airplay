@@ -44,7 +44,8 @@ typedef enum background_mode_e {
 typedef enum video_renderer_type_e {
     VIDEO_RENDERER_DUMMY,
     VIDEO_RENDERER_RPI,
-    VIDEO_RENDERER_GSTREAMER
+    VIDEO_RENDERER_GSTREAMER,
+    VIDEO_RENDERER_FFMPEG_SDL2,
 } video_renderer_type_t;
 
 typedef enum flip_mode_e {
