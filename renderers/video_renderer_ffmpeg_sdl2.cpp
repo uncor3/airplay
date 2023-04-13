@@ -145,28 +145,27 @@ static void video_renderer_ffmpeg_sdl2_render_buffer(video_renderer_t *renderer,
       int h = frame->height;
       logger_log(renderer->logger, LOGGER_DEBUG, "frame: %d, %d", w, h);
 
-      reinit_scale(renderer->logger);
-
-      sws_scale(sws_ctx,                      // sws context
-                frame->data,                  // src slice
-                frame->linesize,              // src stride
-                0,                            // src slice y
-                frame->height,                // src slice height
-                av_frame_render_yuv->data,    // dst planes
-                av_frame_render_yuv->linesize // dst strides
-      );
-
       std::promise<void> promise;
       SDL_Event event;
       event.type = SDL_USER_FUNC;
-      event.user.data1 = new std::function<void()>([w, h, &promise]() mutable {
+      event.user.data1 = new std::function<void()>([&]() mutable {
         // auto resize window
         if (window_size.w != w || window_size.h != h) {
           window_size.w = w;
           window_size.h = h;
+          reinit_scale(renderer->logger);
           SDL_SetWindowSize(sdl_window, w, h);
-          SDL_RenderSetLogicalSize(sdl_renderer, w, h);
+          // SDL_RenderSetLogicalSize(sdl_renderer, w, h); // will keep ratio
         }
+
+        sws_scale(sws_ctx,                      // sws context
+                  frame->data,                  // src slice
+                  frame->linesize,              // src stride
+                  0,                            // src slice y
+                  frame->height,                // src slice height
+                  av_frame_render_yuv->data,    // dst planes
+                  av_frame_render_yuv->linesize // dst strides
+        );
 
         // render on main thread
         SDL_UpdateYUVTexture(
