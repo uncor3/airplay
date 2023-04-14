@@ -143,7 +143,7 @@ raop_handler_info(raop_conn_t *conn,
     plist_t displays_0_width_pixels_node = plist_new_uint(info_display_width);
     plist_t displays_0_height_pixels_node = plist_new_uint(info_display_height);
     plist_t displays_0_rotation_node = plist_new_bool(0);
-    plist_t displays_0_refresh_rate_node = plist_new_real(1.0 / info_display_framerate);
+    plist_t displays_0_refresh_rate_node = plist_new_real(info_display_framerate);
     plist_t displays_0_overscanned_node = plist_new_bool(1);
     plist_t displays_0_features = plist_new_uint(14);
 
@@ -156,6 +156,7 @@ raop_handler_info(raop_conn_t *conn,
     plist_dict_set_item(displays_0_node, "heightPixels", displays_0_height_pixels_node);
     plist_dict_set_item(displays_0_node, "rotation", displays_0_rotation_node);
     plist_dict_set_item(displays_0_node, "refreshRate", displays_0_refresh_rate_node);
+    plist_dict_set_item(displays_0_node, "maxFPS", plist_new_uint(120));
     plist_dict_set_item(displays_0_node, "overscanned", displays_0_overscanned_node);
     plist_dict_set_item(displays_0_node, "features", displays_0_features);
     plist_array_append_item(displays_node, displays_0_node);
