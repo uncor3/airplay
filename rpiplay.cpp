@@ -358,15 +358,15 @@ extern "C" void conn_destroy(void *cls) {
     if (video_renderer) video_renderer->funcs->update_background(video_renderer, -1);
 }
 
-extern "C" void audio_process(void *cls, raop_ntp_t *ntp, aac_decode_struct *data) {
+extern "C" void audio_process(void *cls, raop_ntp_t *ntp, audio_decode_struct *data) {
     if (audio_renderer != NULL) {
-        audio_renderer->funcs->render_buffer(audio_renderer, ntp, data->data, data->data_len, data->pts);
+        audio_renderer->funcs->render_buffer(audio_renderer, ntp, data->data, data->data_len, data->ntp_time_remote);
     }
 }
 
 extern "C" void video_process(void *cls, raop_ntp_t *ntp, h264_decode_struct *data) {
     if (video_renderer != NULL) {
-        video_renderer->funcs->render_buffer(video_renderer, ntp, data->data, data->data_len, data->pts, data->frame_type);
+        video_renderer->funcs->render_buffer(video_renderer, ntp, data->data, data->data_len, 0, 0);
     }
 }
 
@@ -454,7 +454,7 @@ int start_server(std::vector<char> hw_addr, std::string name, bool debug_log,
     unsigned short port = 0;
     raop_start(raop, &port);
     raop_set_port(raop, port);
-    raop_set_display(raop, display_width, display_height, display_framerate);
+//    raop_set_display(raop, display_width, display_height, display_framerate);
 
     int error;
     dnssd = dnssd_init(name.c_str(), strlen(name.c_str()), hw_addr.data(), hw_addr.size(), &error);
