@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4.1)
+cmake_minimum_required(VERSION 3.10.0)
 
 # Common Linux cflags
 if( UNIX AND NOT APPLE )
@@ -47,7 +47,7 @@ if( BRCM_GLES_V2 AND BRCM_EGL AND OPENMAXIL AND BCM_HOST AND VCOS AND VCHIQ_ARM 
 
   list(APPEND RENDERER_FLAGS "HAS_RPI_RENDERER" )
   set( RENDERER_SOURCES ${RENDERER_SOURCES} audio_renderer_rpi.c video_renderer_rpi.c )
-  set( RENDERER_LINK_LIBS ${RENDERER_LINK_LIBS} ilclient airplay fdk-aac h264-bitstream )
+  set( RENDERER_LINK_LIBS ${RENDERER_LINK_LIBS} ilclient airplay_lib fdk-aac h264-bitstream )
 else()
   message( STATUS "OpenMAX libraries not found, skipping compilation of Raspberry Pi renderer" )
 endif()
@@ -76,7 +76,7 @@ if (ENABLE_FFMPEG_SDL2_RENDERER)
   find_package(SDL2 REQUIRED)
 
   # ffmpeg
-  list(APPEND CMAKE_MODULE_PATH ../cmake)
+  list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
   find_package(FFmpeg REQUIRED)
 
   list(APPEND RENDERER_FLAGS "HAS_FFMPEG_SDL2_RENDERER" )
@@ -84,6 +84,10 @@ if (ENABLE_FFMPEG_SDL2_RENDERER)
   list(APPEND RENDERER_LINK_LIBS ${SDL2_LIBRARIES} ${FFMPEG_LIBRARIES} ${SWSCALE_LIBRARIES})
   list(APPEND RENDERER_INCLUDE_DIRS ${SDL2_INCLUDE_DIRS} ${FFMPEG_INCLUDE_DIRS})
 endif ()
+
+# Qt renderer support
+list(APPEND RENDERER_FLAGS "HAS_QT_RENDERER")
+list(APPEND RENDERER_SOURCES video_renderer_qt.cpp)
 
 # Create the renderers library and link against everything
 add_library( renderers STATIC ${RENDERER_SOURCES})

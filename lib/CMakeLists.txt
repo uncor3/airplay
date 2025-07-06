@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4.1)
+cmake_minimum_required(VERSION 3.10.0)
 include_directories( playfair llhttp )
 
 message( STATUS "*** CFLAGS \"" ${CMAKE_C_FLAGS} "\" from build environment will be postpended to CMAKE_CFLAGS" )
@@ -55,17 +55,17 @@ find_package(PkgConfig REQUIRED)
 aux_source_directory(. play_src)
 set(DIR_SRCS ${play_src})
 
-add_library( airplay  STATIC
+add_library( airplay_lib  STATIC
              ${DIR_SRCS}
            )
 
 if ( APPLE )
-  target_link_libraries( airplay 
+  target_link_libraries( airplay_lib 
                          pthread
                          playfair
                          llhttp )
 elseif( WIN32 )
-  target_link_libraries( airplay 
+  target_link_libraries( airplay_lib 
                          pthread
                          playfair
                          llhttp
@@ -73,7 +73,7 @@ elseif( WIN32 )
 			 iphlpapi
                          ws2_32 )
 else()
-  target_link_libraries( airplay PUBLIC
+  target_link_libraries( airplay_lib PUBLIC
           pthread
           playfair
           llhttp )
@@ -85,16 +85,16 @@ if( APPLE OR WIN32 )
    pkg_search_module( PLIST REQUIRED libplist-2.0 )
    find_library( LIBPLIST libplist-2.0.a REQUIRED )
    message( STATUS "(Static linking) LIBPLIST " ${LIBPLIST} )
-   target_link_libraries ( airplay  ${LIBPLIST} )
+   target_link_libraries ( airplay_lib  ${LIBPLIST} )
 else ()
   pkg_search_module(PLIST libplist>=2.0)
   if(NOT PLIST_FOUND)
     pkg_search_module(PLIST REQUIRED libplist-2.0)
   endif()
   find_library( LIBPLIST ${PLIST_LIBRARIES} PATH ${PLIST_LIBDIR} )
-  target_link_libraries ( airplay PUBLIC ${LIBPLIST} )
+  target_link_libraries ( airplay_lib PUBLIC ${LIBPLIST} )
 endif()
-target_include_directories( airplay PRIVATE ${PLIST_INCLUDE_DIRS} )
+target_include_directories( airplay_lib PRIVATE ${PLIST_INCLUDE_DIRS} )
 
 #libcrypto
 if( APPLE )
@@ -107,36 +107,36 @@ if( APPLE )
   message( "OPENSSL_INCLUDE_DIRS " ${OPENSSL_INCLUDE_DIRS} )
   find_library( LIBCRYPTO libcrypto.a PATHS ${OPENSSL_LIBRARY_DIRS} REQUIRED )
   message( "(Static linking) LIBCRYPTO "  ${LIBCRYPTO}  )
-  target_link_libraries( airplay ${LIBCRYPTO} )
+  target_link_libraries( airplay_lib ${LIBCRYPTO} )
   if( LIBCRYPTO MATCHES "/opt/local/lib/libcrypto.a" ) #MacPorts openssl
     find_library( LIBZ libz.a)  # needed by MacPorts openssl
     message("(MacPorts) LIBZ= " ${LIBZ} )
-    target_link_libraries( airplay  ${LIBZ} )
+    target_link_libraries( airplay_lib  ${LIBZ} )
   endif()
-  target_include_directories( airplay PRIVATE ${OPENSSL_INCLUDE_DIRS} )
+  target_include_directories( airplay_lib PRIVATE ${OPENSSL_INCLUDE_DIRS} )
 elseif( WIN32 )
   find_package(OpenSSL 1.1.1 REQUIRED)
-  target_compile_definitions( airplay PUBLIC OPENSSL_API_COMPAT=0x10101000L )
-  target_link_libraries( airplay  OpenSSL::Crypto )
+  target_compile_definitions( airplay_lib PUBLIC OPENSSL_API_COMPAT=0x10101000L )
+  target_link_libraries( airplay_lib  OpenSSL::Crypto )
 else()
   find_package(OpenSSL 1.1.1 REQUIRED)
-  target_compile_definitions( airplay PUBLIC OPENSSL_API_COMPAT=0x10101000L )
-  target_link_libraries( airplay PUBLIC OpenSSL::Crypto )
+  target_compile_definitions( airplay_lib PUBLIC OPENSSL_API_COMPAT=0x10101000L )
+  target_link_libraries( airplay_lib PUBLIC OpenSSL::Crypto )
 endif()
 
 #dns_sd 
 if ( NOT APPLE )
   pkg_search_module(AVAHI_DNSSD avahi-compat-libdns_sd)
   if (AVAHI_DNSSD_FOUND)
-    target_include_directories( airplay PRIVATE ${AVAHI_DNSSD_INCLUDE_DIRS} )
+    target_include_directories( airplay_lib PRIVATE ${AVAHI_DNSSD_INCLUDE_DIRS} )
     find_library( DNSSD ${AVAHI_DNSSD_LIBRARIES} PATH ${AVAHI_DNSSD_LIBDIR})
-    target_link_libraries(airplay PUBLIC ${DNSSD} )
+    target_link_libraries(airplay_lib PUBLIC ${DNSSD} )
   else()  # can also build if mDNSResponder or another implementation of dns_sd is present instead of Avahi
     if ( WIN32 )
       set(BONJOUR_SDK "$ENV{BONJOUR_SDK_HOME}" )
       message( STATUS "BONJOUR_SDK_HOME " ${BONJOUR_SDK} )
       set(DNSSD "${BONJOUR_SDK}/Lib/x64/dnssd.lib")
-      target_link_libraries(airplay ${DNSSD} )
+      target_link_libraries(airplay_lib ${DNSSD} )
       message( STATUS "dns_sd: using " ${DNSSD} )
       find_path(DNSSD_INCLUDE_DIR dns_sd.h HINTS ${BONJOUR_SDK}/Include )
     else()
@@ -146,7 +146,7 @@ if ( NOT APPLE )
       else()
         message( STATUS "dns_sd:  found" ${DNSSD} )
       endif()
-      target_link_libraries(airplay PUBLIC ${DNSSD} ) 
+      target_link_libraries(airplay_lib PUBLIC ${DNSSD} ) 
       find_path(DNSSD_INCLUDE_DIR dns_sd.h HINTS ${CMAKE_INSTALL_INCLUDEDIR} )
     endif()
     if ( NOT DNSSD_INCLUDE_DIR )
@@ -154,6 +154,6 @@ if ( NOT APPLE )
      else()
         message( STATUS "found dns_sd.h in " ${DNSSD_INCLUDE_DIR} )
      endif()
-    target_include_directories( airplay PRIVATE ${DNSSD_INCLUDE_DIR} )
+    target_include_directories( airplay_lib PRIVATE ${DNSSD_INCLUDE_DIR} )
   endif()
-endif()	
+endif()
