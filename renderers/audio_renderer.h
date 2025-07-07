@@ -35,7 +35,8 @@ typedef enum audio_device_e { AUDIO_DEVICE_HDMI, AUDIO_DEVICE_ANALOG, AUDIO_DEVI
 typedef enum audio_renderer_type_e {
     AUDIO_RENDERER_DUMMY,
     AUDIO_RENDERER_RPI,
-    AUDIO_RENDERER_GSTREAMER
+    AUDIO_RENDERER_GSTREAMER,
+    AUDIO_RENDERER_QT
 } audio_renderer_type_t;
 
 typedef struct audio_renderer_config_s {
@@ -62,6 +63,7 @@ typedef struct audio_renderer_s {
 audio_renderer_t *audio_renderer_dummy_init(logger_t *logger, video_renderer_t *video_renderer, audio_renderer_config_t const *config);
 audio_renderer_t *audio_renderer_rpi_init(logger_t *logger, video_renderer_t *video_renderer, audio_renderer_config_t const *config);
 audio_renderer_t *audio_renderer_gstreamer_init(logger_t *logger, video_renderer_t *video_renderer, audio_renderer_config_t const *config);
+audio_renderer_t *audio_renderer_qt_init(logger_t *logger, video_renderer_t *video_renderer, audio_renderer_config_t const *config);
 
 #ifdef __cplusplus
 }

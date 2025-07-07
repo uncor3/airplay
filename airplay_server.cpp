@@ -13,9 +13,9 @@ extern "C" {
         audio_config.device = DEFAULT_AUDIO_DEVICE;
         audio_config.low_latency = DEFAULT_LOW_LATENCY;
         
-        // Use Qt renderer
+        // Use Qt renderers
         video_init_func = video_renderer_qt_init;
-        audio_init_func = audio_renderer_dummy_init;
+        audio_init_func = audio_renderer_gstreamer_init;
         
         return start_server(hw_addr, std::string(name), false, 
                           &video_config, &audio_config, 1920, 1080, 60.0);

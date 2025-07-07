@@ -16,42 +16,6 @@ set( RENDERER_SOURCES audio_renderer_dummy.c video_renderer_dummy.c )
 set( RENDERER_LINK_LIBS "" )
 set( RENDERER_INCLUDE_DIRS "" )
 
-# Check for availability of OpenMAX libraries on Raspberry Pi
-find_library( BRCM_GLES_V2 brcmGLESv2 HINTS ${CMAKE_SYSROOT}/opt/vc/lib/ )
-find_library( BRCM_EGL brcmEGL HINTS ${CMAKE_SYSROOT}/opt/vc/lib/ )
-find_library( OPENMAXIL openmaxil HINTS ${CMAKE_SYSROOT}/opt/vc/lib/ )
-find_library( BCM_HOST bcm_host HINTS ${CMAKE_SYSROOT}/opt/vc/lib/ )
-find_library( VCOS vcos HINTS ${CMAKE_SYSROOT}/opt/vc/lib/ )
-find_library( VCHIQ_ARM vchiq_arm HINTS ${CMAKE_SYSROOT}/opt/vc/lib/ )
-
-if( BRCM_GLES_V2 AND BRCM_EGL AND OPENMAXIL AND BCM_HOST AND VCOS AND VCHIQ_ARM )
-  # We have OpenMAX libraries available! Use them!
-  message( STATUS "Found OpenMAX libraries for Raspberry Pi" )
-  include_directories( ${CMAKE_SYSROOT}/opt/vc/include/
-  	${CMAKE_SYSROOT}/opt/vc/include/interface/vcos/pthreads
-  	${CMAKE_SYSROOT}/opt/vc/include/interface/vmcs_host/linux
-  	${CMAKE_SYSROOT}/opt/vc/src/hello_pi/libs/ilclient )
-
-  option(BUILD_SHARED_LIBS "" OFF)
-  add_subdirectory(fdk-aac EXCLUDE_FROM_ALL)
-  add_subdirectory( h264-bitstream )
-
-  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_LIBOPENMAX=2 -DOMX -DOMX_SKIP64BIT -ftree-vectorize -pipe -DUSE_EXTERNAL_OMX   -DHAVE_LIBBCM_HOST -DUSE_EXTERNAL_LIBBCM_HOST -DUSE_VCHIQ_ARM -Wno-psabi" )
-
-  aux_source_directory( ${CMAKE_SYSROOT}/opt/vc/src/hello_pi/libs/ilclient/ ilclient_src )
-  set( DIR_SRCS ${ilclient_src} )
-  add_library( ilclient STATIC ${DIR_SRCS} )
-
-  target_link_libraries( ilclient ${BRCM_GLES_V2} ${BRCM_EGL} ${OPENMAXIL}
-                         ${BCM_HOST} ${VCOS} ${VCHIQ_ARM} pthread rt m )
-
-  list(APPEND RENDERER_FLAGS "HAS_RPI_RENDERER" )
-  set( RENDERER_SOURCES ${RENDERER_SOURCES} audio_renderer_rpi.c video_renderer_rpi.c )
-  set( RENDERER_LINK_LIBS ${RENDERER_LINK_LIBS} ilclient airplay_lib fdk-aac h264-bitstream )
-else()
-  message( STATUS "OpenMAX libraries not found, skipping compilation of Raspberry Pi renderer" )
-endif()
-
 # Check for availability of gstreamer
 find_package( PkgConfig )
 if( PKG_CONFIG_FOUND AND NOT DISABLE_GSTREAMER_RENDERER )
@@ -71,23 +35,19 @@ else()
   message( STATUS "pkg-config not found, skipping compilation of GStreamer renderer" )
 endif()
 
-if (ENABLE_FFMPEG_SDL2_RENDERER)
-  # sdl2
-  find_package(SDL2 REQUIRED)
-
-  # ffmpeg
-  list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
-  find_package(FFmpeg REQUIRED)
-
-  list(APPEND RENDERER_FLAGS "HAS_FFMPEG_SDL2_RENDERER" )
-  list(APPEND RENDERER_SOURCES video_renderer_ffmpeg_sdl2.cpp)
-  list(APPEND RENDERER_LINK_LIBS ${SDL2_LIBRARIES} ${FFMPEG_LIBRARIES} ${SWSCALE_LIBRARIES})
-  list(APPEND RENDERER_INCLUDE_DIRS ${SDL2_INCLUDE_DIRS} ${FFMPEG_INCLUDE_DIRS})
-endif ()
+# Find FFmpeg for Qt renderer
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBAV REQUIRED 
+    libavcodec>=58.0.0 
+    libavutil>=56.0.0 
+    libswscale>=5.0.0)
 
 # Qt renderer support
 list(APPEND RENDERER_FLAGS "HAS_QT_RENDERER")
-list(APPEND RENDERER_SOURCES video_renderer_qt.cpp)
+list(APPEND RENDERER_SOURCES video_renderer_qt.cpp audio_renderer_qt.cpp)
+list(APPEND RENDERER_LINK_LIBS Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Multimedia)
+list(APPEND RENDERER_LINK_LIBS ${LIBAV_LIBRARIES})
+list(APPEND RENDERER_INCLUDE_DIRS ${LIBAV_INCLUDE_DIRS})
 
 # Create the renderers library and link against everything
 add_library( renderers STATIC ${RENDERER_SOURCES})
