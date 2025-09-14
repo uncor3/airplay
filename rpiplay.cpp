@@ -17,29 +17,21 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include <stddef.h>
 #include <cstring>
-#include <signal.h>
-#include <unistd.h>
-#include <string>
-#include <vector>
 #include <fstream>
+#include <signal.h>
+#include <stddef.h>
+#include <string>
+#include <unistd.h>
+#include <vector>
 
-#include <sys/socket.h>
-#include <ifaddrs.h>
-#ifdef __linux__
-#include <netpacket/packet.h>
-#else
-#include <net/if_dl.h>   /* macOS and *BSD */
-#endif
-
-#include "log.h"
+#include "lib/dnssd.h"
+#include "lib/logger.h"
 #include "lib/raop.h"
 #include "lib/stream.h"
-#include "lib/logger.h"
-#include "lib/dnssd.h"
-#include "renderers/video_renderer.h"
+#include "log.h"
 #include "renderers/audio_renderer.h"
+#include "renderers/video_renderer.h"
 #include <functional>
 
 #ifdef HAS_FFMPEG_SDL2_RENDERER
@@ -58,10 +50,13 @@
 #define DEFAULT_DISPLAY_HEIGHT 1080
 #define DEFAULT_DISPLAY_FRAMERATE 60.0
 #define DEFAULT_FLIP FLIP_NONE
-#define DEFAULT_HW_ADDRESS { (char) 0x48, (char) 0x5d, (char) 0x60, (char) 0x7c, (char) 0xee, (char) 0x22 }
+#define DEFAULT_HW_ADDRESS                                                     \
+    {(char)0x48, (char)0x5d, (char)0x60, (char)0x7c, (char)0xee, (char)0x22}
 
 int start_server(std::vector<char> hw_addr, std::string name, bool debug_log,
-                 video_renderer_config_t const *video_config, audio_renderer_config_t const *audio_config, int display_width, int display_height, float display_framerate);
+                 video_renderer_config_t const *video_config,
+                 audio_renderer_config_t const *audio_config, int display_width,
+                 int display_height, float display_framerate);
 
 int stop_server();
 
@@ -69,8 +64,11 @@ int display_width = 1920;
 int display_height = 1080;
 float display_framerate = 60.0;
 
-typedef video_renderer_t *(*video_init_func_t)(logger_t *logger, video_renderer_config_t const *config);
-typedef audio_renderer_t *(*audio_init_func_t)(logger_t *logger, video_renderer_t *video_renderer, audio_renderer_config_t const *config);
+typedef video_renderer_t *(*video_init_func_t)(
+    logger_t *logger, video_renderer_config_t const *config);
+typedef audio_renderer_t *(*audio_init_func_t)(
+    logger_t *logger, video_renderer_t *video_renderer,
+    audio_renderer_config_t const *config);
 
 typedef struct video_renderer_list_entry_s {
     const char *name;
@@ -93,17 +91,18 @@ static video_renderer_t *video_renderer = NULL;
 static audio_renderer_t *audio_renderer = NULL;
 static logger_t *render_logger = NULL;
 
-
-static void signal_handler(int sig) {
+static void signal_handler(int sig)
+{
     switch (sig) {
-        case SIGINT:
-        case SIGTERM:
-            running = 0;
-            break;
+    case SIGINT:
+    case SIGTERM:
+        running = 0;
+        break;
     }
 }
 
-static void init_signals(void) {
+static void init_signals(void)
+{
     struct sigaction sigact;
 
     sigact.sa_handler = signal_handler;
@@ -113,115 +112,94 @@ static void init_signals(void) {
     sigaction(SIGTERM, &sigact, NULL);
 }
 
-static int parse_hw_addr(std::string str, std::vector<char> &hw_addr) {
+static int parse_hw_addr(std::string str, std::vector<char> &hw_addr)
+{
     for (int i = 0; i < str.length(); i += 3) {
-        hw_addr.push_back((char) stol(str.substr(i), NULL, 16));
+        hw_addr.push_back((char)stol(str.substr(i), NULL, 16));
     }
     return 0;
 }
 
-static std::string find_mac () {
-/*  finds the MAC address of the first active network interface *
- *  in a Linux, *BSD or macOS system.                           */
-    std::string mac_address = "";
-    struct ifaddrs *ifap, *ifaptr;
-    int non_null_octets = 0;
-    unsigned char octet[6], *ptr;
-    if (getifaddrs(&ifap) == 0) {
-        for(ifaptr = ifap; ifaptr != NULL; ifaptr = ifaptr->ifa_next) {
-            if(ifaptr->ifa_addr == NULL) continue;
-#ifdef __linux__
-            if (ifaptr->ifa_addr->sa_family != AF_PACKET) continue;
-            struct sockaddr_ll *s = (struct sockaddr_ll*) ifaptr->ifa_addr;
-            for (int i = 0; i < 6; i++) {
-                if ((octet[i] = s->sll_addr[i]) != 0) non_null_octets++;
-            }
-#else    /* macOS and *BSD */
-            if (ifaptr->ifa_addr->sa_family != AF_LINK) continue;
-            ptr = (unsigned char *) LLADDR((struct sockaddr_dl *) ifaptr->ifa_addr);
-            for (int i= 0; i < 6 ; i++) {
-                if ((octet[i] = *ptr) != 0) non_null_octets++;
-                ptr++;
-            }
-#endif
-            if (non_null_octets) {
-                mac_address.erase();
-                char str[3];
-                for (int i = 0; i < 6 ; i++) {
-                    sprintf(str,"%02x", octet[i]);
-                    mac_address = mac_address + str;
-                    if (i < 5) mac_address = mac_address + ":";
-                }
-                break;
-            }
-        }
-    }
-    freeifaddrs(ifap);
-    return mac_address;
-}
-
-
 // Server callbacks
-extern "C" void conn_init(void *cls) {
-    if (video_renderer) video_renderer->funcs->update_background(video_renderer, 1);
+extern "C" void conn_init(void *cls)
+{
+    if (video_renderer)
+        video_renderer->funcs->update_background(video_renderer, 1);
 }
 
-extern "C" void conn_destroy(void *cls) {
-    if (video_renderer) video_renderer->funcs->update_background(video_renderer, -1);
+extern "C" void conn_destroy(void *cls)
+{
+    if (video_renderer)
+        video_renderer->funcs->update_background(video_renderer, -1);
 }
 
-extern "C" void audio_process(void *cls, raop_ntp_t *ntp, audio_decode_struct *data) {
+extern "C" void audio_process(void *cls, raop_ntp_t *ntp,
+                              audio_decode_struct *data)
+{
     if (audio_renderer != NULL) {
-        audio_renderer->funcs->render_buffer(audio_renderer, ntp, data->data, data->data_len, data->ntp_time_remote);
+        audio_renderer->funcs->render_buffer(audio_renderer, ntp, data->data,
+                                             data->data_len,
+                                             data->ntp_time_remote);
     }
 }
 
-extern "C" void video_process(void *cls, raop_ntp_t *ntp, h264_decode_struct *data) {
+extern "C" void video_process(void *cls, raop_ntp_t *ntp,
+                              h264_decode_struct *data)
+{
     if (video_renderer != NULL) {
-        video_renderer->funcs->render_buffer(video_renderer, ntp, data->data, data->data_len, 0, 0);
+        video_renderer->funcs->render_buffer(video_renderer, ntp, data->data,
+                                             data->data_len, 0, 0);
     }
 }
 
-extern "C" void audio_flush(void *cls) {
-    if (audio_renderer) audio_renderer->funcs->flush(audio_renderer);
+extern "C" void audio_flush(void *cls)
+{
+    if (audio_renderer)
+        audio_renderer->funcs->flush(audio_renderer);
 }
 
-extern "C" void video_flush(void *cls) {
-    if (video_renderer) video_renderer->funcs->flush(video_renderer);
+extern "C" void video_flush(void *cls)
+{
+    if (video_renderer)
+        video_renderer->funcs->flush(video_renderer);
 }
 
-extern "C" void audio_set_volume(void *cls, float volume) {
+extern "C" void audio_set_volume(void *cls, float volume)
+{
     if (audio_renderer != NULL) {
         audio_renderer->funcs->set_volume(audio_renderer, volume);
     }
 }
 
-extern "C" void log_callback(void *cls, int level, const char *msg) {
+extern "C" void log_callback(void *cls, int level, const char *msg)
+{
     switch (level) {
-        case LOGGER_DEBUG: {
-            LOGD("%s", msg);
-            break;
-        }
-        case LOGGER_WARNING: {
-            LOGW("%s", msg);
-            break;
-        }
-        case LOGGER_INFO: {
-            LOGI("%s", msg);
-            break;
-        }
-        case LOGGER_ERR: {
-            LOGE("%s", msg);
-            break;
-        }
-        default:
-            break;
+    case LOGGER_DEBUG: {
+        LOGD("%s", msg);
+        break;
     }
-
+    case LOGGER_WARNING: {
+        LOGW("%s", msg);
+        break;
+    }
+    case LOGGER_INFO: {
+        LOGI("%s", msg);
+        break;
+    }
+    case LOGGER_ERR: {
+        LOGE("%s", msg);
+        break;
+    }
+    default:
+        break;
+    }
 }
 
 int start_server(std::vector<char> hw_addr, std::string name, bool debug_log,
-                 video_renderer_config_t const *video_config, audio_renderer_config_t const *audio_config, int display_width, int display_height, float display_framerate) {
+                 video_renderer_config_t const *video_config,
+                 audio_renderer_config_t const *audio_config, int display_width,
+                 int display_height, float display_framerate)
+{
     raop_callbacks_t raop_cbs;
     memset(&raop_cbs, 0, sizeof(raop_cbs));
     raop_cbs.conn_init = conn_init;
@@ -245,31 +223,37 @@ int start_server(std::vector<char> hw_addr, std::string name, bool debug_log,
     logger_set_callback(render_logger, log_callback, NULL);
     logger_set_level(render_logger, debug_log ? LOGGER_DEBUG : LOGGER_INFO);
 
-    if (video_config->low_latency) logger_log(render_logger, LOGGER_INFO, "Using low-latency mode");
+    if (video_config->low_latency)
+        logger_log(render_logger, LOGGER_INFO, "Using low-latency mode");
 
-    if ((video_renderer = video_init_func(render_logger, video_config)) == NULL) {
+    if ((video_renderer = video_init_func(render_logger, video_config)) ==
+        NULL) {
         LOGE("Could not init video renderer");
         return -1;
     }
 
     if (audio_config->device == AUDIO_DEVICE_NONE) {
         LOGI("Audio disabled");
-    } else if ((audio_renderer = audio_init_func(render_logger, video_renderer, audio_config)) ==
-               NULL) {
+    } else if ((audio_renderer = audio_init_func(render_logger, video_renderer,
+                                                 audio_config)) == NULL) {
         LOGE("Could not init audio renderer");
         return -1;
     }
 
-    if (video_renderer) video_renderer->funcs->start(video_renderer);
-    if (audio_renderer) audio_renderer->funcs->start(audio_renderer);
+    if (video_renderer)
+        video_renderer->funcs->start(video_renderer);
+    if (audio_renderer)
+        audio_renderer->funcs->start(audio_renderer);
 
     unsigned short port = 0;
     raop_start(raop, &port);
     raop_set_port(raop, port);
-//    raop_set_display(raop, display_width, display_height, display_framerate);
+    //    raop_set_display(raop, display_width, display_height,
+    //    display_framerate);
 
     int error;
-    dnssd = dnssd_init(name.c_str(), strlen(name.c_str()), hw_addr.data(), hw_addr.size(), &error);
+    dnssd = dnssd_init(name.c_str(), strlen(name.c_str()), hw_addr.data(),
+                       hw_addr.size(), &error);
     if (error) {
         LOGE("Could not initialize dnssd library!");
         return -2;
@@ -283,13 +267,17 @@ int start_server(std::vector<char> hw_addr, std::string name, bool debug_log,
     return 0;
 }
 
-int stop_server() {
+int stop_server()
+{
     raop_destroy(raop);
     dnssd_unregister_raop(dnssd);
     dnssd_unregister_airplay(dnssd);
-    // If we don't destroy these two in the correct order, we get a deadlock from the ilclient library
-    if (audio_renderer) audio_renderer->funcs->destroy(audio_renderer);
-    if (video_renderer) video_renderer->funcs->destroy(video_renderer);
+    // If we don't destroy these two in the correct order, we get a deadlock
+    // from the ilclient library
+    if (audio_renderer)
+        audio_renderer->funcs->destroy(audio_renderer);
+    if (video_renderer)
+        video_renderer->funcs->destroy(video_renderer);
     logger_destroy(render_logger);
     return 0;
 }
