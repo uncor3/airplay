@@ -103,6 +103,10 @@ static void signal_handler(int sig)
 
 static void init_signals(void)
 {
+#ifdef _WIN32
+    signal(SIGINT, signal_handler);
+    signal(SIGTERM, signal_handler);
+#else
     struct sigaction sigact;
 
     sigact.sa_handler = signal_handler;
@@ -110,6 +114,7 @@ static void init_signals(void)
     sigact.sa_flags = 0;
     sigaction(SIGINT, &sigact, NULL);
     sigaction(SIGTERM, &sigact, NULL);
+#endif
 }
 
 static int parse_hw_addr(std::string str, std::vector<char> &hw_addr)
