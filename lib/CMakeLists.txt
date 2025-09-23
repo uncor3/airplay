@@ -60,17 +60,17 @@ add_library( airplay_lib  STATIC
            )
 
 if ( APPLE )
-  target_link_libraries( airplay_lib 
+  target_link_libraries( airplay_lib PUBLIC
                          pthread
                          playfair
                          llhttp )
 elseif( WIN32 )
-  target_link_libraries( airplay_lib 
+  target_link_libraries( airplay_lib PUBLIC
                          pthread
                          playfair
                          llhttp
                          wsock32
-			 iphlpapi
+                         iphlpapi
                          ws2_32 )
 else()
   target_link_libraries( airplay_lib PUBLIC
@@ -80,12 +80,12 @@ else()
 endif()
 
 # libplist
-if( APPLE OR WIN32 )
+if( APPLE )
    # use static linking
    pkg_search_module( PLIST REQUIRED libplist-2.0 )
    find_library( LIBPLIST libplist-2.0.a REQUIRED )
    message( STATUS "(Static linking) LIBPLIST " ${LIBPLIST} )
-   target_link_libraries ( airplay_lib  ${LIBPLIST} )
+   target_link_libraries ( airplay_lib PUBLIC ${LIBPLIST} )
 else ()
   pkg_search_module(PLIST libplist>=2.0)
   if(NOT PLIST_FOUND)
@@ -107,17 +107,17 @@ if( APPLE )
   message( "OPENSSL_INCLUDE_DIRS " ${OPENSSL_INCLUDE_DIRS} )
   find_library( LIBCRYPTO libcrypto.a PATHS ${OPENSSL_LIBRARY_DIRS} REQUIRED )
   message( "(Static linking) LIBCRYPTO "  ${LIBCRYPTO}  )
-  target_link_libraries( airplay_lib ${LIBCRYPTO} )
+  target_link_libraries( airplay_lib PUBLIC ${LIBCRYPTO} )
   if( LIBCRYPTO MATCHES "/opt/local/lib/libcrypto.a" ) #MacPorts openssl
     find_library( LIBZ libz.a)  # needed by MacPorts openssl
     message("(MacPorts) LIBZ= " ${LIBZ} )
-    target_link_libraries( airplay_lib  ${LIBZ} )
+    target_link_libraries( airplay_lib PUBLIC ${LIBZ} )
   endif()
   target_include_directories( airplay_lib PRIVATE ${OPENSSL_INCLUDE_DIRS} )
 elseif( WIN32 )
   find_package(OpenSSL 1.1.1 REQUIRED)
   target_compile_definitions( airplay_lib PUBLIC OPENSSL_API_COMPAT=0x10101000L )
-  target_link_libraries( airplay_lib  OpenSSL::Crypto )
+  target_link_libraries( airplay_lib PUBLIC OpenSSL::Crypto )
 else()
   find_package(OpenSSL 1.1.1 REQUIRED)
   target_compile_definitions( airplay_lib PUBLIC OPENSSL_API_COMPAT=0x10101000L )
@@ -136,7 +136,7 @@ if ( NOT APPLE )
       set(BONJOUR_SDK "$ENV{BONJOUR_SDK_HOME}" )
       message( STATUS "BONJOUR_SDK_HOME " ${BONJOUR_SDK} )
       set(DNSSD "${BONJOUR_SDK}/Lib/x64/dnssd.lib")
-      target_link_libraries(airplay_lib ${DNSSD} )
+      target_link_libraries(airplay_lib PUBLIC ${DNSSD} )
       message( STATUS "dns_sd: using " ${DNSSD} )
       find_path(DNSSD_INCLUDE_DIR dns_sd.h HINTS ${BONJOUR_SDK}/Include )
     else()

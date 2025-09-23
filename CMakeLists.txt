@@ -24,7 +24,7 @@ add_subdirectory(lib)
 add_subdirectory(renderers)
 
 # Create library instead of executable
-add_library(airplay STATIC rpiplay.cpp airplay_server.cpp)
+add_library(airplay STATIC rpiplay.cpp)
 target_link_libraries(airplay renderers airplay_lib Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Multimedia)
 
 # Make sure the library is aware of the available renderers
