@@ -32,7 +32,6 @@
 #include "log.h"
 #include "renderers/audio_renderer.h"
 #include "renderers/video_renderer.h"
-#include <functional>
 
 #ifdef HAS_FFMPEG_SDL2_RENDERER
 #include "renderers/sdl_event.h"
@@ -56,7 +55,7 @@
 int start_server(std::vector<char> hw_addr, std::string name, bool debug_log,
                  video_renderer_config_t const *video_config,
                  audio_renderer_config_t const *audio_config, int display_width,
-                 int display_height, float display_framerate);
+                 int display_height, float display_framerate, void *callbacks);
 
 int stop_server();
 
@@ -65,7 +64,7 @@ int display_height = 1080;
 float display_framerate = 60.0;
 
 typedef video_renderer_t *(*video_init_func_t)(
-    logger_t *logger, video_renderer_config_t const *config);
+    logger_t *logger, video_renderer_config_t const *config, void *callbacks);
 typedef audio_renderer_t *(*audio_init_func_t)(
     logger_t *logger, video_renderer_t *video_renderer,
     audio_renderer_config_t const *config);
@@ -203,7 +202,7 @@ extern "C" void log_callback(void *cls, int level, const char *msg)
 int start_server(std::vector<char> hw_addr, std::string name, bool debug_log,
                  video_renderer_config_t const *video_config,
                  audio_renderer_config_t const *audio_config, int display_width,
-                 int display_height, float display_framerate)
+                 int display_height, float display_framerate, void *callbacks)
 {
     raop_callbacks_t raop_cbs;
     memset(&raop_cbs, 0, sizeof(raop_cbs));
@@ -231,8 +230,8 @@ int start_server(std::vector<char> hw_addr, std::string name, bool debug_log,
     if (video_config->low_latency)
         logger_log(render_logger, LOGGER_INFO, "Using low-latency mode");
 
-    if ((video_renderer = video_init_func(render_logger, video_config)) ==
-        NULL) {
+    if ((video_renderer =
+             video_init_func(render_logger, video_config, callbacks)) == NULL) {
         LOGE("Could not init video renderer");
         return -1;
     }
@@ -277,6 +276,7 @@ int stop_server()
     raop_destroy(raop);
     dnssd_unregister_raop(dnssd);
     dnssd_unregister_airplay(dnssd);
+    dnssd_destroy(dnssd);
     // If we don't destroy these two in the correct order, we get a deadlock
     // from the ilclient library
     if (audio_renderer)
@@ -288,7 +288,7 @@ int stop_server()
 }
 
 extern "C" {
-int start_server_qt(const char *name)
+int start_server_qt(const char *name, void *callbacks)
 {
     std::vector<char> hw_addr = DEFAULT_HW_ADDRESS;
     video_renderer_config_t video_config;
@@ -306,12 +306,8 @@ int start_server_qt(const char *name)
     audio_init_func = audio_renderer_gstreamer_init;
 
     return start_server(hw_addr, std::string(name), false, &video_config,
-                        &audio_config, 1920, 1080, 60.0);
+                        &audio_config, 1920, 1080, 60.0, callbacks);
 }
 
-int stop_server_qt()
-{
-    running = false;
-    return stop_server();
-}
+int stop_server_qt() { return stop_server(); }
 }

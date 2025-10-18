@@ -17,11 +17,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/* 
+/*
  * H264 renderer using OpenMAX for hardware accelerated decoding
- * on the Raspberry Pi. 
+ * on the Raspberry Pi.
  * Based on the hello_video sample from the Raspberry Pi project.
-*/
+ */
 
 #ifndef VIDEO_RENDERER_H
 #define VIDEO_RENDERER_H
@@ -30,14 +30,22 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
-#include <stdbool.h>
 #include "../lib/logger.h"
 #include "../lib/raop_ntp.h"
+#include <stdbool.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+typedef struct video_renderer_qt_callbacks_s {
+    void (*video_callback)(uint8_t *, int, int);
+    void (*connection_callback)(bool);
+} video_renderer_qt_callbacks_t;
+#endif
 
 typedef enum background_mode_e {
     BACKGROUND_MODE_ON,   // Always show background
-    BACKGROUND_MODE_AUTO, // Only show background while there's an active connection
+    BACKGROUND_MODE_AUTO, // Only show background while there's an active
+                          // connection
     BACKGROUND_MODE_OFF   // Never show background
 } background_mode_t;
 
@@ -66,7 +74,9 @@ typedef struct video_renderer_s video_renderer_t;
 
 typedef struct video_renderer_funcs_s {
     void (*start)(video_renderer_t *renderer);
-    void (*render_buffer)(video_renderer_t *renderer, raop_ntp_t *ntp, unsigned char *data, int data_len, uint64_t pts, int type);
+    void (*render_buffer)(video_renderer_t *renderer, raop_ntp_t *ntp,
+                          unsigned char *data, int data_len, uint64_t pts,
+                          int type);
     void (*flush)(video_renderer_t *renderer);
     void (*destroy)(video_renderer_t *renderer);
     /**
@@ -86,13 +96,23 @@ typedef struct video_renderer_s {
     video_renderer_type_t type;
 } video_renderer_t;
 
-video_renderer_t *video_renderer_dummy_init(logger_t *logger, video_renderer_config_t const *config);
-video_renderer_t *video_renderer_rpi_init(logger_t *logger, video_renderer_config_t const *config);
-video_renderer_t *video_renderer_gstreamer_init(logger_t *logger, video_renderer_config_t const *config);
-video_renderer_t *video_renderer_ffmpeg_sdl2_init(logger_t *logger, video_renderer_config_t const *config);
-video_renderer_t *video_renderer_qt_init(logger_t *logger, video_renderer_config_t const *config);
+video_renderer_t *
+video_renderer_dummy_init(logger_t *logger,
+                          video_renderer_config_t const *config);
+video_renderer_t *
+video_renderer_rpi_init(logger_t *logger,
+                        video_renderer_config_t const *config);
+video_renderer_t *
+video_renderer_gstreamer_init(logger_t *logger,
+                              video_renderer_config_t const *config);
+video_renderer_t *
+video_renderer_ffmpeg_sdl2_init(logger_t *logger,
+                                video_renderer_config_t const *config);
+video_renderer_t *video_renderer_qt_init(logger_t *logger,
+                                         video_renderer_config_t const *config,
+                                         void *callbacks);
 #ifdef __cplusplus
 }
 #endif
 
-#endif //VIDEO_RENDERER_H
+#endif // VIDEO_RENDERER_H

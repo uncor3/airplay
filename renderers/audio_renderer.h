@@ -24,13 +24,17 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
-#include <stdbool.h>
 #include "../lib/logger.h"
 #include "../lib/raop_ntp.h"
 #include "video_renderer.h"
+#include <stdbool.h>
+#include <stdint.h>
 
-typedef enum audio_device_e { AUDIO_DEVICE_HDMI, AUDIO_DEVICE_ANALOG, AUDIO_DEVICE_NONE } audio_device_t;
+typedef enum audio_device_e {
+    AUDIO_DEVICE_HDMI,
+    AUDIO_DEVICE_ANALOG,
+    AUDIO_DEVICE_NONE
+} audio_device_t;
 
 typedef enum audio_renderer_type_e {
     AUDIO_RENDERER_DUMMY,
@@ -48,7 +52,8 @@ typedef struct audio_renderer_s audio_renderer_t;
 
 typedef struct audio_renderer_funcs_s {
     void (*start)(audio_renderer_t *renderer);
-    void (*render_buffer)(audio_renderer_t *renderer, raop_ntp_t *ntp, unsigned char *data, int data_len, uint64_t pts);
+    void (*render_buffer)(audio_renderer_t *renderer, raop_ntp_t *ntp,
+                          unsigned char *data, int data_len, uint64_t pts);
     void (*set_volume)(audio_renderer_t *renderer, float volume);
     void (*flush)(audio_renderer_t *renderer);
     void (*destroy)(audio_renderer_t *renderer);
@@ -60,13 +65,22 @@ typedef struct audio_renderer_s {
     audio_renderer_type_t type;
 } audio_renderer_t;
 
-audio_renderer_t *audio_renderer_dummy_init(logger_t *logger, video_renderer_t *video_renderer, audio_renderer_config_t const *config);
-audio_renderer_t *audio_renderer_rpi_init(logger_t *logger, video_renderer_t *video_renderer, audio_renderer_config_t const *config);
-audio_renderer_t *audio_renderer_gstreamer_init(logger_t *logger, video_renderer_t *video_renderer, audio_renderer_config_t const *config);
-audio_renderer_t *audio_renderer_qt_init(logger_t *logger, video_renderer_t *video_renderer, audio_renderer_config_t const *config);
+audio_renderer_t *
+audio_renderer_dummy_init(logger_t *logger, video_renderer_t *video_renderer,
+                          audio_renderer_config_t const *config);
+audio_renderer_t *
+audio_renderer_rpi_init(logger_t *logger, video_renderer_t *video_renderer,
+                        audio_renderer_config_t const *config);
+audio_renderer_t *
+audio_renderer_gstreamer_init(logger_t *logger,
+                              video_renderer_t *video_renderer,
+                              audio_renderer_config_t const *config);
+audio_renderer_t *audio_renderer_qt_init(logger_t *logger,
+                                         video_renderer_t *video_renderer,
+                                         audio_renderer_config_t const *config);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //AUDIO_RENDERER_H
+#endif // AUDIO_RENDERER_H
