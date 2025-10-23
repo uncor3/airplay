@@ -16,18 +16,29 @@ set( RENDERER_SOURCES audio_renderer_dummy.c video_renderer_dummy.c )
 set( RENDERER_LINK_LIBS "" )
 set( RENDERER_INCLUDE_DIRS "" )
 
-# Check for availability of gstreamer
+# On macOS with Homebrew, help pkg-config find .pc files
+if(APPLE)
+    # For Apple Silicon
+    if(IS_DIRECTORY /opt/homebrew/lib/pkgconfig)
+        list(APPEND ENV{PKG_CONFIG_PATH} /opt/homebrew/lib/pkgconfig)
+    endif()
+    # For Intel
+    if(IS_DIRECTORY /usr/local/lib/pkgconfig)
+        list(APPEND ENV{PKG_CONFIG_PATH} /usr/local/lib/pkgconfig)
+    endif()
+endif()
+
+# Check for availability of gstreamer 
 find_package( PkgConfig )
 if( PKG_CONFIG_FOUND AND NOT DISABLE_GSTREAMER_RENDERER )
-  pkg_check_modules( GST gstreamer-1.0>=1.4
+  pkg_check_modules( GST IMPORTED_TARGET gstreamer-1.0>=1.4
                          gstreamer-sdp-1.0>=1.4
                          gstreamer-video-1.0>=1.4
                          gstreamer-app-1.0>=1.4 )
   if( GST_FOUND )
     list(APPEND RENDERER_FLAGS "HAS_GSTREAMER_RENDERER" )
     set( RENDERER_SOURCES ${RENDERER_SOURCES} audio_renderer_gstreamer.c video_renderer_gstreamer.c )
-    set( RENDERER_LINK_LIBS ${RENDERER_LINK_LIBS} ${GST_LIBRARIES} )
-    set( RENDERER_INCLUDE_DIRS ${RENDERER_INCLUDE_DIRS} ${GST_INCLUDE_DIRS} )
+    list(APPEND RENDERER_LINK_LIBS PkgConfig::GST)
   else()
     message( STATUS "GStreamer not found, skipping compilation of GStreamer renderer" )
   endif()
@@ -37,7 +48,7 @@ endif()
 
 # Find FFmpeg for Qt renderer
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(LIBAV REQUIRED 
+pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
     libavcodec>=58.0.0 
     libavutil>=56.0.0 
     libswscale>=5.0.0)
@@ -46,12 +57,10 @@ pkg_check_modules(LIBAV REQUIRED
 list(APPEND RENDERER_FLAGS "HAS_QT_RENDERER")
 list(APPEND RENDERER_SOURCES video_renderer_qt.cpp audio_renderer_qt.cpp)
 list(APPEND RENDERER_LINK_LIBS Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Multimedia)
-list(APPEND RENDERER_LINK_LIBS ${LIBAV_LIBRARIES})
-list(APPEND RENDERER_INCLUDE_DIRS ${LIBAV_INCLUDE_DIRS})
 
 # Create the renderers library and link against everything
 add_library( renderers STATIC ${RENDERER_SOURCES})
-target_link_libraries ( renderers ${RENDERER_LINK_LIBS} )
+target_link_libraries ( renderers PUBLIC ${RENDERER_LINK_LIBS} PkgConfig::LIBAV )
 target_include_directories( renderers PUBLIC ${RENDERER_INCLUDE_DIRS} )
 
 # Pass the final renderer flags up to the parent scope so it knows which renderers
