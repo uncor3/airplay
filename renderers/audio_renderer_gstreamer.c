@@ -71,10 +71,15 @@ audio_renderer_t *audio_renderer_gstreamer_init(logger_t *logger, video_renderer
     }
 
     assert(check_plugins());
-
+    /* for some reason audioresample is required on Windows */
+#ifdef _WIN32
     renderer->pipeline = gst_parse_launch("appsrc name=audio_source stream-type=0 format=GST_FORMAT_TIME is-live=true ! queue ! decodebin !"
-    "audioconvert ! volume name=volume ! level ! autoaudiosink sync=false", &error);
-    g_assert(renderer->pipeline);
+    "audioconvert ! audioresample ! volume name=volume ! level ! autoaudiosink sync=false", &error);
+#else
+    renderer->pipeline = gst_parse_launch("appsrc name=audio_source stream-type=0 format=GST_FORMAT_TIME is-live=true ! queue ! decodebin !"
+        "audioconvert ! volume name=volume ! level ! autoaudiosink sync=false", &error);
+        g_assert(renderer->pipeline);
+#endif
 
     renderer->appsrc = gst_bin_get_by_name(GST_BIN(renderer->pipeline), "audio_source");
     renderer->volume = gst_bin_get_by_name(GST_BIN(renderer->pipeline), "volume");
