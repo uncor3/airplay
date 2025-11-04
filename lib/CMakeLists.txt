@@ -50,7 +50,6 @@ if( APPLE )
   find_program( PKG_CONFIG_EXECUTABLE  pkg-config  PATHS /Library/FrameWorks/GStreamer.framework/Commands )
   message( "PKG_CONFIG_EXECUTABLE " ${PKG_CONFIG_EXECUTABLE} )
 endif()
-find_package(PkgConfig REQUIRED)
 
 aux_source_directory(. play_src)
 set(DIR_SRCS ${play_src})

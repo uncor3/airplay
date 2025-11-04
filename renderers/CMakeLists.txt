@@ -29,7 +29,6 @@ if(APPLE)
 endif()
 
 # Check for availability of gstreamer 
-find_package( PkgConfig )
 if( PKG_CONFIG_FOUND AND NOT DISABLE_GSTREAMER_RENDERER )
   pkg_check_modules( GST IMPORTED_TARGET gstreamer-1.0>=1.4
                          gstreamer-sdp-1.0>=1.4
@@ -47,7 +46,6 @@ else()
 endif()
 
 # Find FFmpeg for Qt renderer
-find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
     libavcodec>=58.0.0 
     libavutil>=56.0.0 

@@ -13,8 +13,8 @@ project(rpiplay)
 set (CMAKE_CXX_STANDARD 17)
 
 # Find Qt components needed for renderers
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets Multimedia)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Multimedia)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Multimedia)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Multimedia)
 
 set (RENDERER_FLAGS "-DHAS_QT_RENDERER")
 
@@ -32,3 +32,10 @@ target_compile_definitions(airplay PRIVATE "${RENDERER_FLAGS}")
 
 # Pass renderer flags to parent scope
 set(RENDERER_FLAGS "${RENDERER_FLAGS}" PARENT_SCOPE)
+
+
+# Find pkg-config, providing a hint for Windows/MSYS2
+if(WIN32)
+    set(PKG_CONFIG_EXECUTABLE "C:/msys64/mingw64/bin/pkg-config.exe" CACHE FILEPATH "Path to pkg-config executable")
+endif()
+find_package(PkgConfig REQUIRED)
